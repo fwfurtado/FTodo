@@ -13,4 +13,5 @@ type TodoRepository(context: Context) =
         member this.FindByIdAsync(id: int) =
             context.FindById id
 
-        member this.UpdateTodo(todo) = failwith "todo"
+        member this.UpdateTodo(todo) =
+            context.UpdateState todo

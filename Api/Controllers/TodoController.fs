@@ -52,17 +52,43 @@ type TodoController(logger: ILogger<TodoController>, service: TodoServices) =
                 | Some todo -> Results.Ok(toView todo)
                 | None -> Results.NotFound()
         }
-    
+
     [<HttpPost>]
     member _.Create([<FromBody>] request: NewTodoRequest) =
         async {
-            logger.LogInformation("Creating todo {title} with description {description}", request.Title, request.Description)
+            logger.LogInformation(
+                "Creating todo {title} with description {description}",
+                request.Title,
+                request.Description
+            )
 
             let! result = service.CreateTodoAsync(request.Title, request.Description)
-            
+
             logger.LogInformation("Created todo result {result}", result)
-            
+
             match result with
-            | Error msg -> return Results.BadRequest({|Message = msg|})
+            | Fail msg -> return Results.BadRequest({| Message = msg |})
             | Success result -> return Results.CreatedAtRoute("ShowTodo", {| id = result.Id.Value |}, toView result)
+        }
+
+    [<HttpPut("{id}/forward")>]
+    member _.Forward(id: int) =
+        async {
+            logger.LogInformation("Moving forward the todo {id} ", id)
+
+            
+            match! service.MoveForwardAsync(id) with
+            | Fail msg -> return Results.NotFound({| Message = msg |})
+            | Success result -> return Results.Ok(toView result)
+        }
+
+    [<HttpPut("{id}/backward")>]
+    member _.Backward(id: int) =
+        async {
+            logger.LogInformation("Moving forward the todo {id} ", id)
+
+            
+            match! service.MoveBackwardAsync(id) with
+            | Fail msg -> return Results.NotFound({| Message = msg |})
+            | Success result -> return Results.Ok(toView result)
         }

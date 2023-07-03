@@ -55,11 +55,11 @@ type Context(options: DbContextOptions<Context>) =
 
     member this._Todos
         with public get () = this.Todos
-        and public set (value) = this.Todos <- value
+        and public set value = this.Todos <- value
 
 
     override this.OnModelCreating(modelBuilder) =
-        modelBuilder.RegisterOptionTypes() |> ignore
+        modelBuilder.RegisterOptionTypes()
         modelBuilder.ApplyConfiguration(Mapping()) |> ignore
 
     member this.FindById(id: int) =
@@ -75,16 +75,27 @@ type Context(options: DbContextOptions<Context>) =
 
             return result |> List.map DB.toDomain |> List.toSeq
         }
-    
+
     member this.Add(todo: Entities.Todo) =
         async {
             let dbTodo = DB.fromDomain todo
-            
+
             let! saved = addEntityAsync' this dbTodo
-            
+
             saveChanges this
-            
+
             return saved.Entity.Id
+        }
+
+    member this.UpdateState(todo: Entities.Todo) =
+        async {
+            
+            let dbTodo =  DB.fromDomain todo
+            updateEntity this (fun (t: DB.TodoDB) -> t.Id) dbTodo |> ignore          
+
+            saveChanges this
+
+            return todo
         }
 
 type Mapping() =
@@ -95,10 +106,8 @@ type Mapping() =
 
             builder.HasKey(fun x -> x.Id :> obj) |> ignore
 
-            builder
-                .Property(fun x -> x.Id)
-                .HasColumnName("id")
-                .ValueGeneratedOnAdd() |> ignore
+            builder.Property(fun x -> x.Id).HasColumnName("id").ValueGeneratedOnAdd()
+            |> ignore
 
             builder.Property(fun x -> x.Title).HasColumnName("title").IsRequired() |> ignore
 

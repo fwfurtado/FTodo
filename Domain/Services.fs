@@ -17,10 +17,21 @@ type TodoServices(repository: ITodoRepository) =
 
             return setId todo id
         }
-    
+
     member _.MoveForwardAsync(id: int) =
         async {
             match! repository.FindByIdAsync id with
-            | Some todo -> return! (todo >> transitionForward >> repository.UpdateTodo >> Success)
-            | None -> return Fail "Todo not found"          
+            | Some todo ->
+                let! newTodo = todo |> transitionForward |> repository.UpdateTodo
+                return Success newTodo
+            | None -> return Fail "Todo not found"
+        }
+    
+    member _.MoveBackwardAsync(id: int) =
+        async {
+            match! repository.FindByIdAsync id with
+            | Some todo ->
+                let! newTodo = todo |> transitionBackward |> repository.UpdateTodo
+                return Success newTodo
+            | None -> return Fail "Todo not found"
         }
